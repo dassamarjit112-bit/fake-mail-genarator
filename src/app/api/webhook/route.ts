@@ -92,7 +92,8 @@ export async function POST(request: Request) {
         `_Check the dashboard for full HTML content\\._`;
 
       await bot.api.sendMessage(inbox.user_id, notificationText, { 
-        parse_mode: 'MarkdownV2' 
+        parse_mode: 'MarkdownV2',
+        link_preview_options: { is_disabled: true }
       });
     } catch (botError: any) {
       console.error("TELEGRAM ERROR:", botError.description || botError.message);

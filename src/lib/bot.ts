@@ -40,7 +40,7 @@ bot.command('start', (ctx) => {
     `I can help you stay anonymous and keep your real inbox clean\\!\n\n` +
     `🚀 *Available Commands:*\n` +
     `• /generate \\- Spawn a new random email\n` +
-    `• /inbox \\- View and manage your email addresses\n` +
+    `• /emails \\- View and manage your email addresses\n` +
     `• /help \\- Get assistance\n\n` +
     `*How it works:*\n` +
     `1️⃣ Generate an address\n` +
@@ -76,7 +76,7 @@ bot.command('generate', async (ctx) => {
   );
 });
 
-bot.command('inbox', async (ctx) => {
+bot.command('emails', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
 
@@ -90,21 +90,23 @@ bot.command('inbox', async (ctx) => {
   if (inboxError) return ctx.reply('❌ Error fetching inboxes\\.');
   
   if (!inboxes || inboxes.length === 0) {
-    return ctx.reply('📭 You don\'t have any active mailboxes\\. Use /generate to create one\\!');
+    return ctx.reply("📭 You don\\'t have any active mailboxes\\. Use /generate to create one\\!");
   }
 
-  let response = `📬 *Your Mailboxes:*\\n\\n`;
-  for (const inbox of inboxes) {
+  let totalEmails = inboxes.length;
+  let response = `✨ *Your Active Mailboxes \\(${totalEmails}\\)* ✨\n\n`;
+  
+  for (const [index, inbox] of inboxes.entries()) {
     const { count } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .eq('inbox_id', inbox.id);
 
-    response += `📧 \`${inbox.email_address}\`\\n`;
-    response += `📩 Messages: ${count || 0}\\n\\n`;
+    response += `*${index + 1}\\.* 📧 \`${inbox.email_address}\`\n`;
+    response += `      └ 📩 *${count || 0}* Messages\n\n`;
   }
 
-  response += `_Showing your active addresses\\. Incoming mail will be pushed to you instantly\\._`;
+  response += `_Incoming mail is pushed to you instantly\\._`;
 
   return ctx.reply(response, { parse_mode: 'MarkdownV2' });
 });
@@ -113,7 +115,7 @@ bot.command('help', (ctx) => {
   return ctx.reply(
     `🛠️ *Help Center*\n\n` +
     `• Use /generate to create a new inbox\\.\n` +
-    `• Use /inbox to see your addresses\\.\n` +
+    `• Use /emails to see your addresses\\.\n` +
     `• When an email arrives, I will send you a message automatically\\.\n\n` +
     `_Issues? Contact your administrator\\._`,
     { parse_mode: 'MarkdownV2' }
