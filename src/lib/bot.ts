@@ -30,6 +30,8 @@ async function transferConversation(conversation: Conversation<MyContext>, ctx: 
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    await ctx.replyWithChatAction('typing');
+
     // 1. Fetch user's emails
     const { data: inboxes, error: inboxError } = await conversation.external(() => 
         supabase.from('inboxes').select('id, email_address').eq('user_id', userId)
@@ -135,21 +137,6 @@ function escapeMd(text: string) {
   return text.replace(/[\\_*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
 }
 
-// Middleware to sync user info
-bot.use(async (ctx, next) => {
-  if (ctx.from) {
-    const { id, username, first_name, last_name } = ctx.from;
-    const name = username || `${first_name} ${last_name || ''}`.trim();
-    
-    // Upsert user into Supabase
-    await supabase.from('users').upsert({
-      id: id,
-      username: name
-    });
-  }
-  await next();
-});
-
 // Install session and conversations
 const storage = supabaseAdapter({
   supabase,
@@ -164,9 +151,16 @@ bot.use(conversations());
 bot.use(createConversation(transferConversation));
 
 // Welcome message
-bot.command('start', (ctx) => {
+bot.command('start', async (ctx) => {
   const name = ctx.from?.first_name || 'there';
   const escapedName = escapeMd(name);
+
+  // Sync user info only on /start to reduce DB load
+  if (ctx.from) {
+    const { id, username, first_name, last_name } = ctx.from;
+    const displayName = username || `${first_name} ${last_name || ''}`.trim();
+    await supabase.from('users').upsert({ id, username: displayName });
+  }
   
   return ctx.reply(
     `✨ *Welcome, ${escapedName}\\!* ✨\n\n` +
@@ -188,6 +182,8 @@ bot.command('start', (ctx) => {
 bot.command('generate', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
+
+  await ctx.replyWithChatAction('typing');
 
   const randomString = Math.random().toString(36).substring(2, 10);
   const domain = process.env.DOMAIN || 'sdev-mailbox.linkpc.net';
@@ -215,6 +211,8 @@ bot.command('emails', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
 
+  await ctx.replyWithChatAction('typing');
+
   // Get all inboxes for this user
   const { data: inboxes, error: inboxError } = await supabase
     .from('inboxes')
@@ -231,12 +229,18 @@ bot.command('emails', async (ctx) => {
   let totalEmails = inboxes.length;
   let response = `✨ *Your Active Mailboxes \\(${totalEmails}\\)* ✨\n\n`;
   
-  for (const [index, inbox] of inboxes.entries()) {
-    const { count } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('inbox_id', inbox.id);
+  // OPTIMIZATION: Fetch all counts in parallel to avoid N+1 bottleneck
+  const countsResults = await Promise.all(
+    inboxes.map(inbox => 
+      supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('inbox_id', inbox.id)
+    )
+  );
 
+  for (const [index, inbox] of inboxes.entries()) {
+    const { count } = countsResults[index];
     response += `*${index + 1}\\.* 📧 \`${inbox.email_address}\`\n`;
     response += `      └ 📩 *${count || 0}* Messages\n\n`;
   }
