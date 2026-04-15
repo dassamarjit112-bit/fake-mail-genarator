@@ -80,11 +80,15 @@ export async function POST(request: Request) {
 
     // 3. Notify user via Telegram
     try {
+      // Truncate text for Telegram preview (limit 4096, using 1000 for safety)
+      const textPreview = text.length > 1000 ? text.substring(0, 1000) + '...' : text;
+
       const notificationText = 
         `📧 *New Email Received\\!* 📧\n\n` +
         `📥 *To:* \`${inbox.email_address.replace(/[`\\]/g, '\\$&')}\`\n` +
         `👤 *From:* ${escapeMd(String(from))}\n` +
         `📝 *Subject:* ${escapeMd(String(subject))}\n\n` +
+        `📖 *Message Preview:* \n${escapeMd(textPreview || '(No text content)')}\n\n` +
         `_Check the dashboard for full HTML content\\._`;
 
       await bot.api.sendMessage(inbox.user_id, notificationText, { 
