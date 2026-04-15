@@ -148,7 +148,7 @@ bot.use(session({
   storage,
 }));
 bot.use(conversations());
-bot.use(createConversation(transferConversation));
+bot.use(createConversation(transferConversation, "transferConversation"));
 
 // Welcome message
 bot.command('start', async (ctx) => {
