@@ -9,6 +9,14 @@ function escapeMd(text: string) {
   return text.replace(/[\\_*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
 }
 
+// Helper to extract text from mailparser address objects which can be arrays or single objects
+function getAddress(addr: any): string | undefined {
+  if (!addr) return undefined;
+  if (typeof addr === 'string') return addr;
+  if (Array.isArray(addr)) return getAddress(addr[0]);
+  return addr.text || undefined;
+}
+
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
@@ -24,8 +32,8 @@ export async function POST(request: Request) {
     if (payload.raw) {
       try {
         const parsed = await simpleParser(payload.raw);
-        from = from || parsed.from?.text || parsed.headers.get('from');
-        to = to || parsed.to?.text || parsed.headers.get('to');
+        from = from || getAddress(parsed.from) || getAddress(parsed.headers.get('from'));
+        to = to || getAddress(parsed.to) || getAddress(parsed.headers.get('to'));
         subject = subject || parsed.subject || '(No Subject)';
         text = parsed.text || '';
         html = parsed.html || parsed.textAsHtml || '';
