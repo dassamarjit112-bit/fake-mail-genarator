@@ -81,11 +81,11 @@ export async function POST(request: Request) {
     // 3. Notify user via Telegram
     try {
       const notificationText = 
-        `📧 *New Email Received!* 📧\n\n` +
-        `📥 *To:* \`${escapeMd(inbox.email_address)}\`\n` +
+        `📧 *New Email Received\\!* 📧\n\n` +
+        `📥 *To:* \`${inbox.email_address.replace(/[`\\]/g, '\\$&')}\`\n` +
         `👤 *From:* ${escapeMd(String(from))}\n` +
         `📝 *Subject:* ${escapeMd(String(subject))}\n\n` +
-        `_Check the dashboard for full HTML content._`;
+        `_Check the dashboard for full HTML content\\._`;
 
       await bot.api.sendMessage(inbox.user_id, notificationText, { 
         parse_mode: 'MarkdownV2' 
