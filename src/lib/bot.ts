@@ -54,11 +54,12 @@ async function transferConversation(conversation: Conversation<MyContext>, ctx: 
     });
 
     // Wait for button press
-    const { callbackQuery } = await conversation.waitFor("callback_query:data");
-    await ctx.answerCallbackQuery();
+    const selectCtx = await conversation.waitFor("callback_query:data");
+    await selectCtx.answerCallbackQuery();
+    const callbackQuery = selectCtx.callbackQuery;
 
     if (callbackQuery.data === "transfer_cancel") {
-        return await ctx.editMessageText("❌ Transfer cancelled.");
+        return await selectCtx.editMessageText("❌ Transfer cancelled.");
     }
 
     const inboxId = callbackQuery.data.split(":")[1];
@@ -67,7 +68,7 @@ async function transferConversation(conversation: Conversation<MyContext>, ctx: 
     if (!selectedInbox) return await ctx.reply("❌ Invalid selection.");
 
     // 3. Ask for recipient username
-    await ctx.editMessageText(`📤 *Transferring:* \`${escapeMd(selectedInbox.email_address)}\`\n\nNow, please *send the Telegram username* of the person you want to transfer this email to\\.`, {
+    await selectCtx.editMessageText(`📤 *Transferring:* \`${escapeMd(selectedInbox.email_address)}\`\n\nNow, please *send the Telegram username* of the person you want to transfer this email to\\.`, {
         parse_mode: "MarkdownV2"
     });
 
@@ -101,11 +102,11 @@ async function transferConversation(conversation: Conversation<MyContext>, ctx: 
     );
 
     // Wait for confirmation
-    const confirmRes = await conversation.waitFor("callback_query:data");
-    await ctx.answerCallbackQuery();
+    const confirmCtx = await conversation.waitFor("callback_query:data");
+    await confirmCtx.answerCallbackQuery();
 
-    if (confirmRes.callbackQuery.data === "transfer_cancel") {
-        return await ctx.editMessageText("❌ Transfer cancelled.");
+    if (confirmCtx.callbackQuery.data === "transfer_cancel") {
+        return await confirmCtx.editMessageText("❌ Transfer cancelled.");
     }
 
     // 6. Execute transfer
@@ -117,7 +118,7 @@ async function transferConversation(conversation: Conversation<MyContext>, ctx: 
         return await ctx.reply(`❌ Transfer failed: ${escapeMd(transferError.message)}`);
     }
 
-    await ctx.editMessageText("🚀 *Transfer Successful\\!* \n\nYou no longer have access to this email address\\. The new owner has been notified\\.");
+    await confirmCtx.editMessageText("🚀 *Transfer Successful\\!* \n\nYou no longer have access to this email address\\. The new owner has been notified\\.");
 
     // Notify the new owner
     try {
