@@ -33,6 +33,13 @@ create index if not exists idx_inboxes_user_id on public.inboxes(user_id);
 create index if not exists idx_inboxes_email_address on public.inboxes(email_address);
 create index if not exists idx_messages_inbox_id on public.messages(inbox_id);
 
+-- Sessions table for Grammy
+create table if not exists public.sessions (
+    id text primary key,
+    session text
+);
+
 -- Enable Realtime for both tables
 alter publication supabase_realtime add table inboxes;
 alter publication supabase_realtime add table messages;
+alter publication supabase_realtime add table sessions;

@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@grammyjs/conversations": "^2.1.1",
+    "@grammyjs/storage-supabase": "^2.5.0",
     "@supabase/supabase-js": "^2.103.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
