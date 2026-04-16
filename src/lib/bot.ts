@@ -22,7 +22,13 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN is not set');
 }
 
-export const bot = new Bot<MyContext>(token);
+export const bot = new Bot<MyContext>(token, {
+  client: {
+    // Enable webhook replies for instant responses (Vercel optimization)
+    // This tells GrammY to use the webhook response for the first API call if possible.
+    canUseWebhookReply: (method) => ["sendMessage", "sendPhoto", "answerCallbackQuery"].includes(method),
+  },
+});
 
 // --- Conversation Logic ---
 
@@ -219,7 +225,8 @@ bot.command('emails', async (ctx) => {
     .from('inboxes')
     .select('id, email_address')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(10); // Limit to 10 for performance
 
   if (inboxError) return ctx.reply('❌ Error fetching inboxes\\.');
   

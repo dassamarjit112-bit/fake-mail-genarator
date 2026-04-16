@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { bot } from '@/lib/bot';
 import { webhookCallback } from 'grammy';
 import { NextResponse } from 'next/server';

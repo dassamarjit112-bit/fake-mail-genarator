@@ -29,9 +29,10 @@ create table if not exists public.messages (
 );
 
 -- Indexes for performance
-create index if not exists idx_inboxes_user_id on public.inboxes(user_id);
+create index if not exists idx_inboxes_user_id_created on public.inboxes(user_id, created_at desc);
 create index if not exists idx_inboxes_email_address on public.inboxes(email_address);
 create index if not exists idx_messages_inbox_id on public.messages(inbox_id);
+create index if not exists idx_users_username on public.users(username);
 
 -- Sessions table for Grammy
 create table if not exists public.sessions (
