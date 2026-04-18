@@ -97,9 +97,19 @@ export async function POST(request: Request) {
         link_preview_options: { is_disabled: true }
       });
 
-      // Send the email message as an HTML file attachment
-      const messageContent = html || text || 'No message content';
-      const fileBuffer = Buffer.from(messageContent, 'utf-8');
+      // Ensure we send a properly formed HTML document so it opens nicely in a browser
+      let htmlContent = html;
+      if (!htmlContent && text) {
+        // Wrap plain text in HTML with pre-wrap so line breaks are preserved
+        htmlContent = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <title>Email Preview</title>\n  <style>\n    body { font-family: sans-serif; padding: 20px; white-space: pre-wrap; word-break: break-word; }\n  </style>\n</head>\n<body>${text}</body>\n</html>`;
+      } else if (htmlContent && !htmlContent.toLowerCase().includes('<html')) {
+        // Wrap partial HTML
+        htmlContent = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <title>Email Preview</title>\n</head>\n<body>${htmlContent}</body>\n</html>`;
+      } else if (!htmlContent) {
+        htmlContent = `<!DOCTYPE html>\n<html>\n<body><p>No message content</p></body>\n</html>`;
+      }
+
+      const fileBuffer = Buffer.from(htmlContent, 'utf-8');
       
       try {
         await bot.api.sendDocument(inbox.user_id, new InputFile(fileBuffer, 'message.html'));
