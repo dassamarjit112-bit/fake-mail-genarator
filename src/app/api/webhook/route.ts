@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { bot } from '@/lib/bot';
+import { InputFile } from 'grammy';
 import { simpleParser } from 'mailparser';
 
 // Helper to escape MarkdownV2 special characters
@@ -95,6 +96,16 @@ export async function POST(request: Request) {
         parse_mode: 'MarkdownV2',
         link_preview_options: { is_disabled: true }
       });
+
+      // Send the email message as an HTML file attachment
+      const messageContent = html || text || 'No message content';
+      const fileBuffer = Buffer.from(messageContent, 'utf-8');
+      
+      try {
+        await bot.api.sendDocument(inbox.user_id, new InputFile(fileBuffer, 'message.html'));
+      } catch (docError: any) {
+        console.error("TELEGRAM DOC ERROR:", docError.description || docError.message);
+      }
     } catch (botError: any) {
       console.error("TELEGRAM ERROR:", botError.description || botError.message);
     }
