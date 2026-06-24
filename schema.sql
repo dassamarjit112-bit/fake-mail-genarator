@@ -44,3 +44,11 @@ create table if not exists public.sessions (
 alter publication supabase_realtime add table inboxes;
 alter publication supabase_realtime add table messages;
 alter publication supabase_realtime add table sessions;
+
+-- User Rewards table to track AdsGram session access
+create table if not exists public.user_rewards (
+    telegram_id text primary key,
+    is_rewarded boolean default false,
+    unlocked_until timestamp with time zone,
+    created_at timestamp with time zone default now()
+);

@@ -186,11 +186,45 @@ bot.command('start', async (ctx) => {
   );
 });
 
+// Add AdsGram payload fetcher (Placeholder)
+async function fetchLiveAdsGramPayload(userId: number) {
+  // Replace with actual AdsGram API call or Direct Link logic
+  return {
+    image_url: "https://via.placeholder.com/600x400.png?text=AdsGram+Premium+Sponsor",
+    text_html: "Please visit our sponsor to unlock premium features.",
+    click_url: `https://t.me/AdsGramBot?start=ref_${userId}`, // Replace with your AdsGram Direct Link
+    button_name: "🔓 Unlock /generate"
+  };
+}
+
 bot.command('generate', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
 
   await ctx.replyWithChatAction('typing');
+
+  // Query Supabase table to verify if this user has an active reward token session
+  const { data: session } = await supabase
+    .from('user_rewards')
+    .select('unlocked_until')
+    .eq('telegram_id', userId.toString())
+    .single();
+
+  const isAccessUnlocked = session && new Date(session.unlocked_until) > new Date();
+
+  if (!isAccessUnlocked) {
+    // USER HAS NOT COMPLETED AN AD RECENTLY: Serve the ad block to unlock it
+    const adData = await fetchLiveAdsGramPayload(userId);
+    
+    const keyboard = new InlineKeyboard().url(adData.button_name, adData.click_url);
+
+    return ctx.replyWithPhoto(adData.image_url, {
+      caption: `🔒 *Premium Access Locked*\n\nTo unlock fake email generation for the next hour, click our sponsor link below:\n\n_${escapeMd(adData.text_html)}_`,
+      parse_mode: 'MarkdownV2',
+      protect_content: true,
+      reply_markup: keyboard
+    });
+  }
 
   const randomString = Math.random().toString(36).substring(2, 10);
   const domain = process.env.DOMAIN || 'sdev-mailbox.linkpc.net';
