@@ -230,6 +230,13 @@ bot.command('generate', async (ctx) => {
   const domain = process.env.DOMAIN || 'sdev-mailbox.linkpc.net';
   const emailAddress = `${randomString}@${domain}`;
 
+  // Ensure user exists in users table to prevent foreign key constraints error
+  if (ctx.from) {
+    const { id, username, first_name, last_name } = ctx.from;
+    const displayName = username || `${first_name} ${last_name || ''}`.trim();
+    await supabase.from('users').upsert({ id, username: displayName });
+  }
+
   // Save to Supabase
   const { error } = await supabase.from('inboxes').insert({
     user_id: userId,
@@ -241,8 +248,8 @@ bot.command('generate', async (ctx) => {
   }
 
   return ctx.reply(
-    `✅ *New Email Generated:*\\n\\n` +
-    `📧 \`${emailAddress}\`\\n\\n` +
+    `✅ *New Email Generated:*\n\n` +
+    `📧 \`${emailAddress}\`\n\n` +
     `You will receive alerts here when someone sends an email to this address\\!`,
     { parse_mode: 'MarkdownV2' }
   );
